@@ -42,7 +42,7 @@ void findMax(const int tread_id) {
 }
  
 // p1 - n, p2 - threads_num
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
     if (argc > 1) {
         n = atoi(argv[1]);
         threads_num = atoi(argv[2]);
@@ -50,6 +50,8 @@ int main(int argc, char** argv) {
 
     fillRandom();
     // printMatrix();
+
+    auto start = std::chrono::steady_clock::now();
 
     if (threads_num == 1) {
         for (int i = 0; i < n; i++) {
@@ -73,6 +75,10 @@ int main(int argc, char** argv) {
             }
         }
     }
+
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
 
     // printMatrix();
     
