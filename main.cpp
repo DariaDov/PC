@@ -3,17 +3,22 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
+#include <chrono>
 
 //var 19
 
-const int n = 10;
+int n = 10;
+int threads_num = 5;
 const int max_num = 100;
-const int threads_num = 10;
 
-int matrix[n][n]; 
+int **matrix; 
 
 void fillRandom() {
+    matrix = new int*[n];
+
     for (int i = 0; i < n; ++i) {
+        matrix[i] = new int[n];
+
         for (int j = 0; j < n; ++j) {
             matrix[i][j] = rand() % max_num;
         }
@@ -36,21 +41,40 @@ void findMax(const int tread_id) {
     std::swap(matrix[tread_id][tread_id], matrix[tread_id][max_val_id]);
 }
  
-int main() {
-    fillRandom();
-    printMatrix();
-
-    std::vector<std::thread> threads;
- 
-	for (int i = 0; i < threads_num; i++)	{
-		threads.push_back(std::thread(findMax, i));
-	}
-
-    for (auto& t : threads) {
-        t.join();
+// p1 - n, p2 - threads_num
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        n = atoi(argv[1]);
+        threads_num = atoi(argv[2]);
     }
 
-    printMatrix();
+    fillRandom();
+    // printMatrix();
+
+    if (threads_num == 1) {
+        for (int i = 0; i < n; i++) {
+            findMax(i);
+        }
+    }
+    else {
+        std::vector<std::thread> threads;
+    
+        int start_threads = std::min(n, threads_num);
+
+        for (int i = 0; i < start_threads; i++) {
+            threads.push_back(std::thread(findMax, i));
+        }
+
+        for (int i = 0; i < start_threads; i++) {
+            threads[i].join();
+            if (start_threads < n) {
+                threads.push_back(std::thread(findMax, start_threads));
+                start_threads++;
+            }
+        }
+    }
+
+    // printMatrix();
     
     return 0;
 }
