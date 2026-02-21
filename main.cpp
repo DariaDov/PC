@@ -7,8 +7,8 @@
 
 //var 19
 
-int n = 10;
-int threads_num = 5;
+int n = 1000;
+int threads_num = 1;
 const int max_num = 100;
 
 int **matrix; 
@@ -36,9 +36,11 @@ void printMatrix()
     std::cout << std::endl;
 }
 
-void findMax(const int tread_id) {
-    int max_val_id = std::max_element(&matrix[tread_id][0], &matrix[tread_id][0] + n) - &matrix[tread_id][0];
-    std::swap(matrix[tread_id][tread_id], matrix[tread_id][max_val_id]);
+void findMax(const int thread_id, const int num_threads) {
+    for (int c = thread_id; c < n; c += num_threads) {
+        int max_val_id = std::max_element(&matrix[c][0], &matrix[c][0] + n) - &matrix[c][0];
+        std::swap(matrix[c][c], matrix[c][max_val_id]);
+    }
 }
  
 // p1 - n, p2 - threads_num
@@ -54,31 +56,26 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::steady_clock::now();
 
     if (threads_num == 1) {
-        for (int i = 0; i < n; i++) {
-            findMax(i);
-        }
+        findMax(0, 1);
     }
     else {
         std::vector<std::thread> threads;
     
         int start_threads = std::min(n, threads_num);
+        threads.reserve(start_threads);
 
         for (int i = 0; i < start_threads; i++) {
-            threads.push_back(std::thread(findMax, i));
+            threads.push_back(std::thread(findMax, i, start_threads));
         }
 
         for (int i = 0; i < start_threads; i++) {
             threads[i].join();
-            if (start_threads < n) {
-                threads.push_back(std::thread(findMax, start_threads));
-                start_threads++;
-            }
         }
     }
 
     auto end = std::chrono::steady_clock::now();
     auto diff = end - start;
-    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff).count() << std::endl;
 
     // printMatrix();
     
