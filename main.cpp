@@ -7,7 +7,7 @@
 
 //var 19
 
-int n = 1000;
+int n = 10;
 int threads_num = 1;
 const int max_num = 100;
 
@@ -18,6 +18,7 @@ void fillRandom() {
 
     for (int i = 0; i < n; ++i) {
         matrix[i] = new int[n];
+        //std::cout << matrix[i] << std::endl; // delete
 
         for (int j = 0; j < n; ++j) {
             matrix[i][j] = rand() % max_num;
@@ -51,9 +52,10 @@ int main(int argc, char* argv[]) {
     }
 
     fillRandom();
-    // printMatrix();
+    // printMatrix(); // print
 
     auto start = std::chrono::steady_clock::now();
+    int threads_time = 0;
 
     if (threads_num == 1) {
         findMax(0, 1);
@@ -64,9 +66,13 @@ int main(int argc, char* argv[]) {
         int start_threads = std::min(n, threads_num);
         threads.reserve(start_threads);
 
+        auto start = std::chrono::steady_clock::now();
         for (int i = 0; i < start_threads; i++) {
             threads.push_back(std::thread(findMax, i, start_threads));
         }
+        auto end = std::chrono::steady_clock::now();
+        auto diff_threads = end - start;
+        threads_time = std::chrono::duration_cast<std::chrono::microseconds>(diff_threads).count();
 
         for (int i = 0; i < start_threads; i++) {
             threads[i].join();
@@ -76,8 +82,9 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::steady_clock::now();
     auto diff = end - start;
     std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff).count() << std::endl;
+    std::cout << threads_time << std::endl;
 
-    // printMatrix();
+    // printMatrix(); // print
     
     return 0;
 }

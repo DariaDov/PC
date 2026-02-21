@@ -10,10 +10,10 @@ for n in [10, 50, 100, 500, 1000, 10000, 20000]:
         print(result)
         
         threadpoints.append(threads_num)
-        timepoints.append(int(result.stdout))
+        timepoints.append(int(result.stdout.split('\n')[0]))
 
     plt.plot(threadpoints, timepoints,  label=f'{n}')
 
-plt.legend()
+plt.legend() 
 plt.xscale('log')
 plt.show()
