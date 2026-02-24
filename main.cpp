@@ -4,63 +4,42 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
-#include <mutex>
 
-//var 19: Знайти кількість елементів, більших за 20, а також найбільше таке число.
+//var 19
 
-int threads_num = 6; //to do
+int n = 10;
+int threads_num = 1;
+const int max_num = 100;
 
-std::vector<int> numbers;
-std::mutex mtx;
-
-const int threshold = 20;
-int n = 100000000;
-const int max_num = 40;
-int cnt = 0;
-int max_el = 0;
+int **matrix; 
 
 void fillRandom() {
- for (int i = 0; i < n; ++i) {
-        numbers.push_back(rand() % max_num);
+    matrix = new int*[n];
+
+    for (int i = 0; i < n; ++i) {
+        matrix[i] = new int[n];
+
+        for (int j = 0; j < n; ++j) {
+            matrix[i][j] = rand() % max_num;
+        }
     }
 }
 
-void printVector()
+void printMatrix()
 {
-    for (auto i : numbers) {
-        std::cout << i << " ";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            std::cout << matrix[j][i] << " ";
+        }
+        std::cout << std::endl;
     }
     std::cout << std::endl;
 }
 
-void noParTask () {
-    max_el = *std::max_element(numbers.begin(), numbers.end());
-    if (max_el <= threshold) {
-        max_el = 0;
-        return;
-    }
-    cnt = std::count_if(numbers.begin(), numbers.end(), [](int num) {
-        return num > threshold;
-    });
-}
-
-void mutexTask (const int start_pos, const int end_pos) {
-    int local_cnt = 0;
-    int local_max_el = 0;
-
-    local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
-    if (local_max_el <= threshold) {
-        return;
-    }
-
-    local_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
-        return num > threshold;
-    });
-    
-    std::lock_guard<std::mutex> lock(mtx);
-    cnt += local_cnt;
-    if (local_max_el > max_el) {
-        max_el = local_max_el;
+void findMax(const int thread_id, const int num_threads) {
+    for (int c = thread_id; c < n; c += num_threads) {
+        int max_val_id = std::max_element(&matrix[c][0], &matrix[c][0] + n) - &matrix[c][0];
+        std::swap(matrix[c][c], matrix[c][max_val_id]);
     }
 }
  
@@ -71,23 +50,14 @@ int main(int argc, char* argv[]) {
         threads_num = atoi(argv[2]);
     }
 
-    numbers.reserve(n);
     fillRandom();
-    // printVector();
+    // printMatrix(); // print
+
+    auto start = std::chrono::steady_clock::now();
+    int threads_time = 0;
 
     if (threads_num == 1) {
-        auto start1 = std::chrono::steady_clock::now();
-        noParTask();
-        auto end1 = std::chrono::steady_clock::now();
-        auto diff1 = end1 - start1;
-        if (argc == 1) {
-            std::cout << "Кількість елементів більша за 20: " << cnt << std::endl;
-            std::cout << "Найбільший елемент: " << max_el << std::endl;
-            std::cout << "Час без використання паралелізації: " << std::chrono::duration_cast<std::chrono::microseconds>(diff1).count() << std::endl;
-        }
-        else {
-            std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff1).count() << std::endl;
-        }
+        findMax(0, 1);
     }
     else {
         std::vector<std::thread> threads;
@@ -95,33 +65,25 @@ int main(int argc, char* argv[]) {
         int start_threads = std::min(n, threads_num);
         threads.reserve(start_threads);
 
-        auto start2 = std::chrono::steady_clock::now();
-
-        int start_pos = 0;
-        int end_pos = 0;
-        int step = n / start_threads;
+        auto start = std::chrono::steady_clock::now();
         for (int i = 0; i < start_threads; i++) {
-            start_pos = i * step;
-            end_pos = (i == start_threads - 1) ? n : start_pos + step;
-
-            threads.push_back(std::thread(mutexTask, start_pos, end_pos));
+            threads.push_back(std::thread(findMax, i, start_threads));
         }
+        auto end = std::chrono::steady_clock::now();
+        auto diff_threads = end - start;
+        threads_time = std::chrono::duration_cast<std::chrono::microseconds>(diff_threads).count();
 
         for (int i = 0; i < start_threads; i++) {
             threads[i].join();
         }
-
-        auto end2 = std::chrono::steady_clock::now();
-        auto diff2 = end2 - start2;
-        if (argc == 1) {
-            std::cout << "Кількість елементів більша за 20: " << cnt << std::endl;
-            std::cout << "Найбільший елемент: " << max_el << std::endl;
-            std::cout << "Час mutex: " << std::chrono::duration_cast<std::chrono::microseconds>(diff2).count() << std::endl;
-        }
-        else {
-            std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff2).count() << std::endl;
-        }
     }
+
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff).count() << std::endl;
+    std::cout << threads_time << std::endl;
+
+    // printMatrix(); // print
     
     return 0;
 }
