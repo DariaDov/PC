@@ -9,13 +9,13 @@
 
 //var 19: Знайти кількість елементів, більших за 20, а також найбільше таке число.
 
-int threads_num = 6; //to do
-
 std::vector<int> numbers;
 
 const int threshold = 20;
-int n = 100000000;
 const int max_num = 40;
+int threads_num = 6;
+int n = 100000000;
+
 int cnt = 0;
 int max_el = 0;
 
@@ -48,31 +48,28 @@ void noParTask () {
 }
 
 void atomicTask (const int start_pos, const int end_pos) {
-    // for (int i = start_pos; i < end_pos; ++i) {
-    //     if (numbers[i] > 20) {
-    //         const int previous = at_cnt.fetch_add(1); // (..., std::memory_order_relaxed) ?
-
-    //         int current_max = at_max_el.load();
-    //         while (numbers[i]  > current_max && !at_max_el.compare_exchange_weak(current_max, numbers[i] )) { }
-    //     }
+    // int local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
+    // if (local_max_el <= threshold) {
+    //     return;
     // }
 
-    int local_cnt = 0;
+    // int local_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
+    //     return num > threshold;
+    // });
 
-    int local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
-    if (at_max_el <= threshold) {
-        return;
+    // const int previous = at_cnt.fetch_add(local_cnt);
+
+    // int current_max = at_max_el.load();
+    // while (local_max_el  > current_max && !at_max_el.compare_exchange_weak(current_max, local_max_el)) { }   
+
+    for (int i = start_pos; i < end_pos; ++i) {
+        if (numbers[i] > 20) {
+            const int previous = at_cnt.fetch_add(1); // (..., std::memory_order_relaxed) ?
+
+            int current_max = at_max_el.load();
+            while (numbers[i]  > current_max && !at_max_el.compare_exchange_weak(current_max, numbers[i] )) { }
+        }
     }
-
-    at_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
-        return num > threshold;
-    });
-    
-    const int previous = at_cnt.fetch_add(1); // (..., std::memory_order_relaxed) ?
-
-    int current_max = at_max_el.load();
-    while (local_max_el  > current_max && !at_max_el.compare_exchange_weak(current_max, local_max_el)) { }
-    
 }
  
 // p1 - n, p2 - threads_num
@@ -125,8 +122,8 @@ int main(int argc, char* argv[]) {
         auto end2 = std::chrono::steady_clock::now();
         auto diff2 = end2 - start2;
         if (argc == 1) {
-            std::cout << "Кількість елементів більша за 20: " << cnt << std::endl;
-            std::cout << "Найбільший елемент: " << max_el << std::endl;
+            std::cout << "Кількість елементів більша за 20: " << at_cnt << std::endl;
+            std::cout << "Найбільший елемент: " << at_max_el << std::endl;
             std::cout << "Час atomic: " << std::chrono::duration_cast<std::chrono::microseconds>(diff2).count() << std::endl;
         }
         else {

@@ -8,14 +8,14 @@
 
 //var 19: Знайти кількість елементів, більших за 20, а також найбільше таке число.
 
-int threads_num = 6; //to do
-
 std::vector<int> numbers;
 std::mutex mtx;
 
 const int threshold = 20;
-int n = 100000000;
 const int max_num = 40;
+int threads_num = 6;
+int n = 100000000;
+
 int cnt = 0;
 int max_el = 0;
 
@@ -45,22 +45,27 @@ void noParTask () {
 }
 
 void mutexTask (const int start_pos, const int end_pos) {
-    int local_cnt = 0;
-    int local_max_el = 0;
+    // int local_cnt = 0;
+    // int local_max_el = 0;
 
-    local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
-    if (local_max_el <= threshold) {
-        return;
-    }
+    // local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
+    // if (local_max_el <= threshold) {
+    //     return;
+    // }
 
-    local_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
-        return num > threshold;
-    });
-    
-    std::lock_guard<std::mutex> lock(mtx);
-    cnt += local_cnt;
-    if (local_max_el > max_el) {
-        max_el = local_max_el;
+    // local_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
+    //     return num > threshold;
+    // });    
+
+    for (int i = start_pos; i < end_pos; ++i) {
+        if (numbers[i] > 20) {
+            mtx.lock();
+            cnt++;
+            if (numbers[i] > max_el) {
+                max_el = numbers[i];
+            }
+            mtx.unlock();
+        }
     }
 }
  
