@@ -1,71 +1,16 @@
-#include <iostream>
-#include <thread>
-#include <cstdlib>
-#include <vector>
-#include <algorithm>
-#include <chrono>
-#include <mutex>
 #include <atomic>
+#include "seq_algorithm.h"
 
 //var 19: Знайти кількість елементів, більших за 20, а також найбільше таке число.
-
-std::vector<int> numbers;
-
-const int threshold = 20;
-const int max_num = 40;
-int threads_num = 6;
-int n = 100000000;
-
-int cnt = 0;
-int max_el = 0;
 
 std::atomic<int> at_cnt(0);
 std::atomic<int> at_max_el(0);
 
-void fillRandom() {
- for (int i = 0; i < n; ++i) {
-        numbers.push_back(rand() % max_num);
-    }
-}
-
-void printVector()
-{
-    for (auto i : numbers) {
-        std::cout << i << " ";
-    }
-    std::cout << std::endl;
-}
-
-void noParTask () {
-    max_el = *std::max_element(numbers.begin(), numbers.end());
-    if (max_el <= threshold) {
-        max_el = 0;
-        return;
-    }
-    cnt = std::count_if(numbers.begin(), numbers.end(), [](int num) {
-        return num > threshold;
-    });
-}
-
 void atomicTask (const int start_pos, const int end_pos) {
-    // int local_max_el = *std::max_element(numbers.begin() + start_pos, numbers.begin() + end_pos);
-    // if (local_max_el <= threshold) {
-    //     return;
-    // }
-
-    // int local_cnt = std::count_if(numbers.begin() + start_pos, numbers.begin() + end_pos, [](int num) {
-    //     return num > threshold;
-    // });
-
-    // const int previous = at_cnt.fetch_add(local_cnt);
-
-    // int current_max = at_max_el.load();
-    // while (local_max_el  > current_max && !at_max_el.compare_exchange_weak(current_max, local_max_el)) { }   
-
     for (int i = start_pos; i < end_pos; ++i) {
         if (numbers[i] > 20) {
-            const int previous = at_cnt.fetch_add(1); // (..., std::memory_order_relaxed) ?
-
+            const int previous = at_cnt.fetch_add(1);
+            
             int current_max = at_max_el.load();
             while (numbers[i]  > current_max && !at_max_el.compare_exchange_weak(current_max, numbers[i] )) { }
         }
@@ -84,18 +29,7 @@ int main(int argc, char* argv[]) {
     // printVector();
 
     if (threads_num == 1) {
-        auto start1 = std::chrono::steady_clock::now();
-        noParTask();
-        auto end1 = std::chrono::steady_clock::now();
-        auto diff1 = end1 - start1;
-        if (argc == 1) {
-            std::cout << "Кількість елементів більша за 20: " << cnt << std::endl;
-            std::cout << "Найбільший елемент: " << max_el << std::endl;
-            std::cout << "Час без використання паралелізації: " << std::chrono::duration_cast<std::chrono::microseconds>(diff1).count() << std::endl;
-        }
-        else {
-            std::cout << std::chrono::duration_cast<std::chrono::microseconds>(diff1).count() << std::endl;
-        }
+        singleThread(argc);
     }
     else {
         std::vector<std::thread> threads;
