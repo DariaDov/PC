@@ -1,3 +1,5 @@
+#pragma once
+
 #include <queue>
 #include <mutex>
 #include <shared_mutex>
@@ -38,7 +40,7 @@ public:
     }
 
 
-    T top() const {
+    T front() const {
         std::shared_lock lock(mtx);
         return task_queue.front();
     }
