@@ -37,6 +37,12 @@ public:
         return true;
     }
 
+
+    T top() const {
+        std::shared_lock lock(mtx);
+        return task_queue.front();
+    }
+
     template <typename... Args>
     void emplace(Args&&... args) {
         std::unique_lock lock(mtx);
